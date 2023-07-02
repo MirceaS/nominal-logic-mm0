@@ -1,0 +1,68 @@
+delimiter $ ( ~ $ $ ) $;
+
+sort Sort;
+sort AtomSort; -- instantiable
+sort DataSort; -- instantiable
+term atom_sort (a: AtomSort): Sort;
+term data_sort (d: DataSort): Sort;
+term abs_sort (a: AtomSort) (s: Sort): Sort;
+term prop_sort: Sort;
+
+sort Symbol; -- instantiable
+pure sort Atom;
+provable sort Term;
+term term_sym (s: Symbol): Term;
+term term_atom {a: Atom}: Term a;
+term term_app (t1 t2: Term): Term;
+infixl term_app: $@@$ prec 24;
+
+sort TermSort;
+term fun_sort (s: Sort): TermSort;
+term arg_sort (s: Sort) (ts: TermSort): TermSort;
+
+provable sort WellSortedness;
+term is_of_sort (t: Term) (ts: TermSort): WellSortedness;
+infixl is_of_sort: $::$ prec 15;
+
+axiom sorting_app (t1 t2: Term) (s: Sort) (ts: TermSort):
+  $ t1 :: arg_sort s ts $ >
+  $ t2 :: fun_sort s $ >
+  $ t1 @@ t2 :: ts $;
+
+term valid (t: Term): WellSortedness;
+axiom validity (t: Term) (ts: TermSort): $ t $ > $ t :: ts $ > $ valid t $;
+
+term term_eq_sym: Symbol;
+-- sort of equals?
+def _term_eq (t1 t2: Term): Term = $ (term_sym term_eq_sym) @@ t1 @@ t2 $;
+infixl _term_eq: $==$ prec 15;
+
+axiom eq_refl (t: Term): $ t == t $;
+axiom eq_sym (t1 t2: Term): $ t1 == t2 $ > $ t2 == t1 $;
+axiom eq_trans (t1 t2 t3: Term): $ t1 == t2 $ > $ t2 == t3 $ > $ t1 == t3 $;
+axiom eq_cong (t1 t2 u1 u2: Term): $ t1 == u1 $ > $ t2 == u2 $ > $ (t1 @@ t2) == (u1 @@ u2) $;
+axiom eq_prop (t1 t2: Term): $ t1 == t2 $ > $ t1 $ > $ t2 $;
+
+term swap_sym: Symbol;
+def swap {a b: Atom} (t: Term a b): Term a b = $ (term_sym swap_sym) @@ (term_atom a) @@ (term_atom b) @@ t $;
+axiom swap_sort (a: AtomSort) (s: Sort): $ term_sym swap_sym :: arg_sort (atom_sort a) (arg_sort (atom_sort a) (arg_sort s (fun_sort s))) $; -- are we using this anywhere?
+
+axiom swap_id {a: Atom} (t: Term a): $ (swap a a t) == t $; -- provable?
+axiom swap_atom1 {a b: Atom}: $ (swap a b (term_atom a)) == term_atom b $;
+axiom swap_atom2 {a b: Atom}: $ (swap a b (term_atom b)) == term_atom a $;
+axiom swap_atom {a b c: Atom}: $ (swap a b (term_atom c)) == term_atom c $;
+axiom equivariance_sym {a b: Atom} (sym: Symbol):
+  $ swap a b (term_sym sym) == term_sym sym $;
+axiom equivariance_app {a b: Atom} (t1 t2: Term a b):
+  $ swap a b (term_app t1 t2) == term_app (swap a b t1) (swap a b t2) $;
+axiom equivariance_prop {a b: Atom} (t: Term a b):
+  $ t :: fun_sort prop_sort $ >
+  $ (swap a b t) == t $;
+
+term abs_sym: Symbol;
+def abs {a: Atom} (t: Term): Term a = $ (term_sym abs_sym) @@ (term_atom a) @@ t $;
+-- sort of abs
+
+-- term fresh {t: Atom}: Data t > Prop t;
+
+
